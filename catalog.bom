@@ -69,6 +69,13 @@ brooklyn.catalog:
             label: mongoDB port
             description: MongoDB Port
             default: 27017
+
+          - name: mongodb.ipaddr
+            type: string
+            label: MongoDB IpAddresses
+            description: |
+              The comma seperated list of IP Addresses that MongoDB will listen on
+            default: 127.0.0.1
     
         brooklyn.config:
     
@@ -104,6 +111,8 @@ brooklyn.catalog:
     
           customize.command: |
             # customizes mongodb-server
+            sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
+            sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
     
           launch.command: |
             # launches mongodb-server
@@ -123,6 +132,8 @@ brooklyn.catalog:
             UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
             RHELREPO: $brooklyn:config("mongodb.rhelrepo")
             PACKAGES: $brooklyn:config("mongodb.packagelist")
+            MONGOPORT: $brooklyn:config("mongodb.port")
+            MONGOIP: $brooklyn:config("mongodb.ipaddr")
     
         brooklyn.initializers:
         # two sensors, recording the data sent to this netcat server:
