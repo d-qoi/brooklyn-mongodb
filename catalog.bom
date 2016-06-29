@@ -40,7 +40,7 @@ brooklyn.catalog:
             type: string
             label: Ubuntu Repo URL
             description: The Repo URL of MongoDB for apt-get
-            default: http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/stable multiverse # this should not be hardcoded to one version of ubuntu (trusty)
+            default: http://repo.mongodb.org/apt/ubuntu percise/mongodb-org/stable multiverse # this should not be hardcoded to one version of ubuntu (trusty)
             # constraints:
             # - required
     
@@ -113,6 +113,7 @@ brooklyn.catalog:
             # customizes mongodb-server
             sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
             sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
+            sudo service mongod restart
     
           launch.command: |
             # launches mongodb-server
