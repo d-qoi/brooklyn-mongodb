@@ -1,0 +1,43 @@
+brooklyn.catalog:
+  version: "0.1"
+  iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
+  license_code: CLOUDSOFT-1.0
+
+  items:
+    - id: mongodb-basic-manipulation
+    # a test that will create a random item, then check it, then update it, then check again, the delete it.
+      item:
+        type: org.apache.brooklyn.test.framework.TestCase
+        brooklyn.config:
+          target: $brooklyn:component("mongodb-server")
+
+        brooklyn.children:
+          - name: 01. Assert Running
+            type: assert-running
+            brooklyn.config:
+              timeout: 1h
+
+          - name: 02. Create item
+            type: ssh-test-succeeds
+            brooklyn.config:
+              timeout: 1m
+              test.command: |
+                #something goes here
+                # and test.command is most likely wrong
+
+          - name: 03. Update item
+            type: ssh-test-succeeds
+            brooklyn.config:
+              timeout: 1m
+              test.command: |
+                #something goes here
+                # and test.command is most likely wrong
+
+          - name: 04. Delete item
+            type: ssh-test-succeeds
+            brooklyn.config:
+              timeout: 1m
+              test.command: |
+                # something goes here
+                # and test.command is most likely wrong
+

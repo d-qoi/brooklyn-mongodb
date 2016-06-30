@@ -85,6 +85,9 @@ brooklyn.catalog:
             description: |
               Generally set at 3.2 for now 
             default: 3.2
+
+          # need to add the rest for setting up replica sets and sharding
+          # that might be a new item rather than an addition to this one
     
         brooklyn.config:
     
@@ -120,6 +123,11 @@ brooklyn.catalog:
     
           customize.command: |
             # customizes mongodb-server
+            #TODO 
+            # add settings for authentication
+            # add settings for sharding
+            # add settings for replication
+            # add settings for enterprise if you are feeling special
             sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
             sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
             sudo service mongod restart
@@ -249,3 +257,12 @@ brooklyn.catalog:
               enricher.targetValue:
                 $brooklyn:formatString("http://%s:%s", 
                   $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))
+
+    - id: mongodb-shard
+      name: MongoDB shard
+      description: |
+        A shard for the MongoDB server
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        
