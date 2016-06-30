@@ -33,6 +33,7 @@ brooklyn.catalog:
             label: Ubuntu Key --recv thing
             description: the thing that goes after --recv in the apt-key command
             default: EA312927
+            #default: 7F0CEB10
             # constraints:
             # - required
     
@@ -40,7 +41,8 @@ brooklyn.catalog:
             type: string
             label: Ubuntu Repo URL
             description: The Repo URL of MongoDB for apt-get
-            default: http://repo.mongodb.org/apt/ubuntu percise/mongodb-org/stable multiverse # this should not be hardcoded to one version of ubuntu (trusty)
+            default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse # this should not be hardcoded to one version of ubuntu (trusty), and hard coded for the version
+            #default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse
             # constraints:
             # - required
     
@@ -76,18 +78,25 @@ brooklyn.catalog:
             description: |
               The comma seperated list of IP Addresses that MongoDB will listen on
             default: 127.0.0.1
+
+          - name: mongodb.version
+            type: string
+            label: MongoDB MajorVersion
+            description: |
+              Generally set at 3.2 for now 
+            default: 3.2
     
         brooklyn.config:
     
           install.command: |
-            #UBUNTUREPO=echo $UBUNTUREPO #does this work? leaving out till it's not hard coded
+            UBUNTUREPO=echo $UBUNTUREPO #does this work? leaving out till it's not hard coded
             if which apt-get 
             then
               echo "[MongoDB] This is a debian based system, setting up apt-get"
               # commands to install on Ubuntu
               # adding the key
               sudo apt-key adv --keyserver $UBUNTUKEYSERV --recv $UBUNTUKEYRECV
-              echo "deb $UBUNTUREPO" | sudo tee /etc/apt/sources.list.d/mongodb.list
+              echo "deb $UBUNTUREPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-$MONGOVERS.list 
               sudo apt-get -y update
               sudo apt-get -y install $PACKAGES
 
@@ -117,7 +126,7 @@ brooklyn.catalog:
     
           launch.command: |
             # launches mongodb-server
-            sudo service mongod start
+            sudo service mongod restart
     
           checkRunning.command: |
             # check this, other exmples are using other methods
@@ -135,6 +144,7 @@ brooklyn.catalog:
             PACKAGES: $brooklyn:config("mongodb.packagelist")
             MONGOPORT: $brooklyn:config("mongodb.port")
             MONGOIP: $brooklyn:config("mongodb.ipaddr")
+            MONGOVERS: $brooklyn:config("mongodb.version")
     
         brooklyn.initializers:
         # two sensors, recording the data sent to this netcat server:
