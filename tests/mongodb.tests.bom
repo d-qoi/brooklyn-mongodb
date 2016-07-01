@@ -20,8 +20,8 @@ brooklyn.catalog:
           - name: 02. Create item
             type: ssh-test-succeeds
             brooklyn.config:
-              timeout: 1m
-              test.command: |
+              timeout: 1h
+                command: |
                 #something goes here
                 # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.insert({name:'Create Me'})" | grep '"nInserted" : 1'
@@ -30,8 +30,8 @@ brooklyn.catalog:
           - name: 03. Update item
             type: ssh-test-succeeds
             brooklyn.config:
-              timeout: 1m
-              test.command: |
+              timeout: 1h
+              command: |
                 #something goes here
                 # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: "Update Me" } }, { multi:false } )"
@@ -40,8 +40,8 @@ brooklyn.catalog:
           - name: 04. Delete item
             type: ssh-test-succeeds
             brooklyn.config:
-              timeout: 1m
-              test.command: |
+              timeout: 1h
+              command: |
                 # something goes here
                 # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.remove( {name : 'Update Me' } )"
