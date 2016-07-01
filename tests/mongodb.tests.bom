@@ -21,9 +21,7 @@ brooklyn.catalog:
             type: ssh-test-succeeds
             brooklyn.config:
               timeout: 1h
-                command: |
-                #something goes here
-                # and test.command is most likely wrong
+              command: |
                 mongo --eval "db.mongodbmanipulationtest.insert({name:'Create Me'})" | grep '"nInserted" : 1'
                 mongo --eval "db.mongodbmanipulationtest.find({name:'Create Me'})" | grep '"name" : "Create Me"'
 
@@ -32,9 +30,7 @@ brooklyn.catalog:
             brooklyn.config:
               timeout: 1h
               command: |
-                #something goes here
-                # and test.command is most likely wrong
-                mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: "Update Me" } }, { multi:false } )"
+                mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: 'Update Me' } }, { multi:false } )"
                 mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep '"name" : "Update Me"'
 
           - name: 04. Delete item
@@ -42,8 +38,7 @@ brooklyn.catalog:
             brooklyn.config:
               timeout: 1h
               command: |
-                # something goes here
-                # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.remove( {name : 'Update Me' } )"
-                [ $(mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep '"name" : "Update Me") -eq 0 ] # really big command, can this be smaller?
+                [ $(mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep -c '"name" : "Update Me"' ) -eq 0 ] # really big command, can this be smaller? 
+                # the above command checkes for the number of times Update Me appears in the output of the mongo command
 
