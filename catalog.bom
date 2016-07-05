@@ -92,7 +92,7 @@ brooklyn.catalog:
         brooklyn.config:
     
           install.command: |
-            #UBUNTUREPO=echo $UBUNTUREPO #does this work? leaving out till it's not hard coded
+            UBUNTUREPO=echo $UBUNTUREPO #does this work? leaving out till it's not hard coded
             if which apt-get 
             then
               echo "[MongoDB] This is a debian based system, setting up apt-get"

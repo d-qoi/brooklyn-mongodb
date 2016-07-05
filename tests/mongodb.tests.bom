@@ -20,25 +20,51 @@ brooklyn.catalog:
           - name: 02. Create item
             type: ssh-test-succeeds
             brooklyn.config:
+<<<<<<< HEAD
+              timeout: 1m
+              test.command: |
+                #something goes here
+                # and test.command is most likely wrong
+=======
               timeout: 1h
-              command: |
+                command: |
+                #something goes here
+                # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.insert({name:'Create Me'})" | grep '"nInserted" : 1'
                 mongo --eval "db.mongodbmanipulationtest.find({name:'Create Me'})" | grep '"name" : "Create Me"'
+>>>>>>> parent of 65d0d46... Finished basic tests for database manipulation
 
           - name: 03. Update item
             type: ssh-test-succeeds
             brooklyn.config:
+<<<<<<< HEAD
+              timeout: 1m
+              test.command: |
+                #something goes here
+                # and test.command is most likely wrong
+=======
               timeout: 1h
               command: |
-                mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: 'Update Me' } }, { multi:false } )"
+                #something goes here
+                # and test.command is most likely wrong
+                mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: "Update Me" } }, { multi:false } )"
                 mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep '"name" : "Update Me"'
+>>>>>>> parent of 65d0d46... Finished basic tests for database manipulation
 
           - name: 04. Delete item
             type: ssh-test-succeeds
             brooklyn.config:
+<<<<<<< HEAD
+              timeout: 1m
+              test.command: |
+                # something goes here
+                # and test.command is most likely wrong
+=======
               timeout: 1h
               command: |
+                # something goes here
+                # and test.command is most likely wrong
                 mongo --eval "db.mongodbmanipulationtest.remove( {name : 'Update Me' } )"
-                [ $(mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep -c '"name" : "Update Me"' ) -eq 0 ] # really big command, can this be smaller? 
-                # the above command checkes for the number of times Update Me appears in the output of the mongo command
+                [ $(mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep '"name" : "Update Me") -eq 0 ] # really big command, can this be smaller?
+>>>>>>> parent of 65d0d46... Finished basic tests for database manipulation
 
