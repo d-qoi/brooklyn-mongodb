@@ -25,60 +25,57 @@ brooklyn.catalog:
             label: Ubuntu Key Server
             description: The apt-key server URL
             default: hkp://keyserver.ubuntu.com:80
-            # constraints:
-            # - required
     
           - name: mongodb.ubuntukeyrecv
             type: string
             label: Ubuntu Key --recv thing
             description: the thing that goes after --recv in the apt-key command
             default: EA312927
-            #default: 7F0CEB10
-            # constraints:
-            # - required
+            #default: 7F0CEB10 # old key
     
           - name: mongodb.ubunturepo
             type: string
             label: Ubuntu Repo URL
             description: The Repo URL of MongoDB for apt-get
-            default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse # this should not be hardcoded to one version of ubuntu (trusty), and hard coded for the version
-            #default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse
-            # constraints:
-            # - required
+            default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse # this should not be hardcoded to one version of ubuntu (precise), and hard coded for the version
     
+            # This could be dropped, it would require changing the installation code to not check for GPG key
           - name: mongodb.rhelkeyserv
             type: string
             label: RHEL Key Server
             description: The server URL for the GPG key for RHEL based OSs (default is for version 3.2)
             default: https://www.mongodb.org/static/pgp/server-3.2.asc
-            # constraints:
-            # - required 
-    
+            
+            # $releasever and $basearch are set by yum, don't change them unless you know what you are doing
           - name: mongodb.rhelrepo
             type: string
             label: RHEL Repo
             description: the server URL for the repo containing MongoDB for RHEL systems
             default: https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/stable/$basearch/    
     
+            # There are 4 packages that are default in the MongodDB-org package, you can install each of these seperatly, or together
           - name: mongodb.packagelist
             type: string
             label: Package Install list
             description: The space seperated list of packages to install
             default: mongodb-org
     
+            # If the port is changed, the tests will not work, unless they are modified to check for a different port
           - name: mongodb.port
             type: port
             label: mongoDB port
             description: MongoDB Port
             default: 27017
-
+            
+            # if 127.0.0.1 is not one of the ip addresses that mongo is listening too, the the tests will not work
           - name: mongodb.ipaddr
             type: string
             label: MongoDB IpAddresses
             description: |
               The comma seperated list of IP Addresses that MongoDB will listen on
             default: 127.0.0.1
-
+            
+            # needed for something
           - name: mongodb.version
             type: string
             label: MongoDB MajorVersion
@@ -103,7 +100,7 @@ brooklyn.catalog:
               sudo apt-get -y update
               sudo apt-get -y install $PACKAGES
 
-            elif which yum
+            elif which yum # this needs to be tested more
             then
               echo "[mongodb] This is a RHEL based system, setting up yum"
               echo "name=MongoDB Repository
@@ -127,7 +124,7 @@ brooklyn.catalog:
             # add settings for authentication
             # add settings for sharding
             # add settings for replication
-            # add settings for enterprise if you are feeling special
+            # these will probably be in a different item
             sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
             sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
             sudo service mongod restart
@@ -155,14 +152,7 @@ brooklyn.catalog:
             MONGOVERS: $brooklyn:config("mongodb.version")
     
         brooklyn.initializers:
-        # two sensors, recording the data sent to this netcat server:
-    
-        # - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
-        #   brooklyn.config:
-        #     name: mongodb.server.http_interface
-        #     command: #finish me
-        #     period: 100ms
-    
+          # update these to not be strings eventually
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.status.bson
