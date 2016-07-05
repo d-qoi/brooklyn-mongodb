@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "0.1"
+  version: "1.0"
   iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
   license_code: CLOUDSOFT-1.0
 
