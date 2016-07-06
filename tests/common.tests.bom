@@ -38,7 +38,7 @@ brooklyn.catalog:
         assert:
           - equals: true
 
-     - id: assert-up
+    - id: assert-up
       item:
         type: sensor-test
         name: TEST [service.isUp] IS [true]
@@ -63,7 +63,7 @@ brooklyn.catalog:
           - matches: on-fire
 
     - id: test-stop-machine
-        item:
+      item:
         name: Invoke [stop] effector (machine)
         type: org.apache.brooklyn.test.framework.TestEffector
         effector: stop
