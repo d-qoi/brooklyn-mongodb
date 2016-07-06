@@ -1,0 +1,239 @@
+brooklyn.catalog:
+  version: "1.0"
+  iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
+  
+  publish:
+    description: Entities to deploy and manage MongoDB servers and clients using Apache brooklyn
+    license_code: Apache-2.0
+    overview: README.md
+
+
+  items:
+    - id: mongodb-server
+      name: MongoDB server
+      description: A standalone MongoDB server, accessable via clients when they are given mongodb.server.url  
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        id: mongodb-server
+  
+        brooklyn.parameters:
+          - name: mongodb.ubuntukeyserv
+            type: string
+            label: Ubuntu Key Server
+            description: The apt-key server URL
+            default: hkp://keyserver.ubuntu.com:80
+    
+          - name: mongodb.ubuntukeyrecv
+            type: string
+            label: Ubuntu Key --recv thing
+            description: the thing that goes after --recv in the apt-key command
+            default: EA312927
+    
+          - name: mongodb.ubunturepo
+            type: string
+            label: Ubuntu Repo URL
+            description: The Repo URL of MongoDB for apt-get
+            default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse # this should not be hardcoded to one version of ubuntu (precise), and hard coded for the version
+    
+            # This could be dropped, it would require changing the installation code to not check for GPG key
+          - name: mongodb.rhelkeyserv
+            type: string
+            label: RHEL Key Server
+            description: The server URL for the GPG key for RHEL based OSs (default is for version 3.2)
+            default: https://www.mongodb.org/static/pgp/server-3.2.asc
+            
+            # $releasever and $basearch are set by yum, don't change them unless you know what you are doing
+          - name: mongodb.rhelrepo
+            type: string
+            label: RHEL Repo
+            description: the server URL for the repo containing MongoDB for RHEL systems
+            default: https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/stable/$basearch/    
+    
+            # There are 4 packages that are default in the MongodDB-org package, you can install each of these seperatly, or together
+          - name: mongodb.packagelist
+            type: string
+            label: Package Install list
+            description: The space seperated list of packages to install
+            default: mongodb-org
+    
+            # If the port is changed, the tests will not work, unless they are modified to check for a different port
+          - name: mongodb.port
+            type: port
+            label: mongoDB port
+            description: MongoDB Port
+            default: 27017
+            
+            # if 127.0.0.1 is not one of the ip addresses that mongo is listening too, the the tests will not work
+          - name: mongodb.ipaddr
+            type: string
+            label: MongoDB IpAddresses
+            description: |
+              The comma seperated list of IP Addresses that MongoDB will listen on
+            default: 127.0.0.1
+            
+            # needed for something
+          - name: mongodb.version
+            type: string
+            label: MongoDB MajorVersion
+            description: |
+              Generally set at 3.2 for now 
+            default: 3.2
+    
+        brooklyn.config:
+    
+          install.command: |
+            
+            if which apt-get 
+            then
+              echo "[MongoDB] This is a debian based system, setting up apt-get"
+              # commands to install on Ubuntu
+              # adding the key
+              sudo apt-key adv --keyserver $UBUNTUKEYSERV --recv $UBUNTUKEYRECV
+              echo "deb $UBUNTUREPO" | sudo tee /etc/apt/sources.list.d/mongodb-org-$MONGOVERS.list 
+              sudo apt-get -y update
+              sudo apt-get -y install $PACKAGES
+
+            elif which yum # this needs to be tested more
+            then
+              echo "[mongodb] This is a RHEL based system, setting up yum"
+              echo "name=MongoDB Repository
+            baseurl=$RHELREPO
+            gpgcheck=1
+            enabled=1
+            gpgkey=$RHELKEYSERV" | sudo tee /etc/yum.repos.d/mongodb.repo > /dev/null
+    
+              sudo yum -y install $PACKAGES
+    
+            else
+              echo "OS is not supported by the install script" 
+              exit 1
+            fi
+            echo "[MongoDB] Finished installing $PACKAGES"
+            sudo service mongod stop
+    
+          customize.command: |
+            #TODO 
+            # add settings for authentication
+            # add settings for sharding
+            # add settings for replication
+            # these will probably be in a different item
+            sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
+            sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
+            sudo service mongod restart
+    
+          launch.command: |
+            sudo service mongod restart
+    
+          checkRunning.command: |
+            sudo service mongod status
+    
+          stop.command: |
+            sudo service mongod stop
+  
+          shell.env:
+            UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
+            UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
+            UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
+            RHELREPO: $brooklyn:config("mongodb.rhelrepo")
+            PACKAGES: $brooklyn:config("mongodb.packagelist")
+            MONGOPORT: $brooklyn:config("mongodb.port")
+            MONGOIP: $brooklyn:config("mongodb.ipaddr")
+            MONGOVERS: $brooklyn:config("mongodb.version")
+    
+        brooklyn.initializers:
+          # update these to not be strings eventually
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.status.bson
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) "
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.uptime
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['uptime'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.insert
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['insert'] " | sed '3!d'
+              period: 100ms
+        
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.query
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['query'] " | sed '3!d'
+              period: 100ms
+          
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.update
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['update'] " | sed '3!d'
+              period: 100ms
+          
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.delete
+              command: | 
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['delete'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.getmore
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['getmore'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.opcounters.command
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['command'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.network.bytesIn
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesIn'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.network.bytesOut
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesOut'] " | sed '3!d'
+              period: 100ms
+    
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: mongodb.server.network.numRequests
+              command: |
+                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['numRequests'] " | sed '3!d'
+              period: 100ms
+    
+        brooklyn.enrichers:
+        # publish URLs when MongoDB is up
+        # `mongodb.url` for public access, `mongodb.subnet.url` for internal access
+          - type: brooklyn.enricher.basic.Transformer
+            brooklyn.config:
+              enricher.sourceSensor: $brooklyn:sensor("service.isUp")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.url")
+              enricher.targetValue: |
+                $brooklyn:formatString("http://%s:%s", 
+                  $brooklyn:attributeWhenReady("host.address"), $brooklyn:config("mongodb.port"))
+          - type: brooklyn.enricher.basic.Transformer
+            brooklyn.config:
+              enricher.sourceSensor: $brooklyn:sensor("service.isUp")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.subnet.url")
+              enricher.targetValue:
+                $brooklyn:formatString("http://%s:%s", 
+                  $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        

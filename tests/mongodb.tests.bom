@@ -1,0 +1,43 @@
+brooklyn.catalog:
+  version: "1.0"
+  iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
+  license_code: Apache-2.0
+
+  items:
+    - id: mongodb-basic-manipulation
+    # a test that will create a random item, then check it, then update it, then check again, the delete it.
+      item:
+        type: org.apache.brooklyn.test.framework.TestCase
+        brooklyn.config:
+          target: $brooklyn:component("mongodb-server")
+
+        brooklyn.children:
+          - name: 01. Assert Running
+            type: assert-running 
+            brooklyn.config:
+              timeout: 1h
+
+          - name: 02. Create item
+            type: ssh-test-succeeds #this test is defined in common.tests.bom
+            brooklyn.config:
+              timeout: 1h 
+              command: |   # this is overwriting the command from the test defined in common.tests.bom
+                mongo --eval "db.mongodbmanipulationtest.insert({name:'Create Me'})" | grep '"nInserted" : 1'
+                mongo --eval "db.mongodbmanipulationtest.find({name:'Create Me'})" | grep '"name" : "Create Me"'
+
+          - name: 03. Update item
+            type: ssh-test-succeeds
+            brooklyn.config:
+              timeout: 1h
+              command: |
+                mongo --eval "db.mongodbmanipulationtest.update( { name:'Create Me' }, { \$set: { name: 'Update Me' } }, { multi:false } )"
+                mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep '"name" : "Update Me"'
+
+          - name: 04. Delete item
+            type: ssh-test-succeeds
+            brooklyn.config:
+              timeout: 1h
+              command: |
+                mongo --eval "db.mongodbmanipulationtest.remove( {name : 'Update Me' } )"
+                [ $(mongo --eval "db.mongodbmanipulationtest.find({name:'Update Me'})" | grep -c '"name" : "Update Me"' ) -eq 0 ] # really big command, can this be smaller? 
+                # the above command checkes for the number of times Update Me appears in the output of the mongo command
