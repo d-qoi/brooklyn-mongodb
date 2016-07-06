@@ -10,7 +10,7 @@ brooklyn.catalog:
   
     - id: ssh-test
       item:
-        type: org.apache.brooklyn.test.framework.TestSshCommand
+        type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
   
     - id: sensor-test
       item:
@@ -18,7 +18,7 @@ brooklyn.catalog:
   
     - id: ssh-test-succeeds
       item:
-        type: org.apache.brooklyn.test.framework.TestSshCommand
+        type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
         brooklyn.config:
           assertStatus:
             equals: 0
