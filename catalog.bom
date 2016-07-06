@@ -118,8 +118,8 @@ brooklyn.catalog:
             # add settings for sharding
             # add settings for replication
             # these will probably be in a different item
-            sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
-            sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
+            sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
+            sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
             sudo service mongod restart
     
           launch.command: |
