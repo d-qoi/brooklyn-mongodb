@@ -6,8 +6,6 @@ brooklyn.catalog:
     description: Entities to deploy and manage MongoDB servers and clients using Apache brooklyn
     license_code: Apache-2.0
     overview: README.md
-    #qa: tests/mongodb.tests.bom
-  #  reference: catalog/reference.json
 
 
   items:
@@ -31,7 +29,6 @@ brooklyn.catalog:
             label: Ubuntu Key --recv thing
             description: the thing that goes after --recv in the apt-key command
             default: EA312927
-            #default: 7F0CEB10 # old key
     
           - name: mongodb.ubunturepo
             type: string
@@ -82,9 +79,6 @@ brooklyn.catalog:
             description: |
               Generally set at 3.2 for now 
             default: 3.2
-
-          # need to add the rest for setting up replica sets and sharding
-          # that might be a new item rather than an addition to this one
     
         brooklyn.config:
     
@@ -119,7 +113,6 @@ brooklyn.catalog:
             sudo service mongod stop
     
           customize.command: |
-            # customizes mongodb-server
             #TODO 
             # add settings for authentication
             # add settings for sharding
@@ -130,15 +123,12 @@ brooklyn.catalog:
             sudo service mongod restart
     
           launch.command: |
-            # launches mongodb-server
             sudo service mongod restart
     
           checkRunning.command: |
-            # check this, other exmples are using other methods
             sudo service mongod status
     
           stop.command: |
-            # nicely shuts down mongodb-server
             sudo service mongod stop
   
           shell.env:
@@ -246,13 +236,4 @@ brooklyn.catalog:
               enricher.targetSensor: $brooklyn:sensor("mongodb.subnet.url")
               enricher.targetValue:
                 $brooklyn:formatString("http://%s:%s", 
-                  $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))
-
-    - id: mongodb-shard
-      name: MongoDB shard
-      description: |
-        A shard for the MongoDB server
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        
+                  $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
