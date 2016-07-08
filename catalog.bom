@@ -15,7 +15,7 @@ brooklyn.catalog:
       itemType: entity
       item:
         type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        id: mongodb-server
+        #id: mongodb-server
   
         brooklyn.parameters:
           - name: mongodb.ubuntukeyserv
@@ -57,6 +57,8 @@ brooklyn.catalog:
             description: The space seperated list of packages to install
             default: mongodb-org
     
+
+
             # If the port is changed, the tests will not work, unless they are modified to check for a different port
           - name: mongodb.port
             type: port
@@ -221,8 +223,8 @@ brooklyn.catalog:
               period: 100ms
     
         brooklyn.enrichers:
-        # publish URLs when MongoDB is up
-        # `mongodb.url` for public access, `mongodb.subnet.url` for internal access
+          # publish URLs when MongoDB is up
+          # `mongodb.url` for public access, `mongodb.subnet.url` for internal access
           - type: brooklyn.enricher.basic.Transformer
             brooklyn.config:
               enricher.sourceSensor: $brooklyn:sensor("service.isUp")
@@ -237,3 +239,64 @@ brooklyn.catalog:
               enricher.targetValue:
                 $brooklyn:formatString("http://%s:%s", 
                   $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
+
+    - id: mongodb-replicaset
+      name: MongoDB Replica Set
+      description: |
+        Uses the mongodb-server to create a replica set. The initial node is created then it adds a dynamic cluster
+        of mongodb servers for the other members
+      item:
+        type: org.apache.brooklyn.entity.group.DynamicCluster
+        
+        brooklyn.parameters:
+          - name: mongodb.rs.name
+            type: string
+            label: Replica Set name
+            description: |
+              The name of the Replica Set
+            default: ReplicaSetName
+
+          - name: mongodb.rs.password
+            type: string
+            label: Replica Set password
+            description: |
+              Assuming that this is not also enterprise only, the authentication for MongoDB RS
+            default: ChangeMe123
+
+
+        firstMemberSpec:
+          $brooklyn:entitySpec:
+            type: mongodb-server
+            name: MongoDB RS Primary
+
+            brooklyn.config:
+              is.first.node: true
+
+              postinstall.command: |
+                # use this to initialize the RS
+                mongod --replset $REPLSETNAME
+
+              customize.command: |
+                echo "replication:
+                  oplogSizeMB: <int>
+                  replSetName: <string>
+                  secondaryIndexPrefetch: <string>
+                  enableMajorityReadConcern: <boolean>" | sudo tee -a /etc/mongod.conf
+
+
+              shell.env:
+                REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+
+
+
+
+        
+        memberSpec:
+          $brooklyn:entitySpec:
+            type: mongodb-server
+            name: MongoDB RS member
+            brooklyn.config:
+              is.first.node: false
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.
