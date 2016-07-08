@@ -256,6 +256,28 @@ brooklyn.catalog:
               The name of the Replica Set
             default: ReplicaSetName
 
+          - name: mongodb.rs.oplogsize
+            type: string
+            label: Operation Log Size
+            description: |
+              The Size of the operation log in Megabytes
+            default: 4096
+
+          - name: mongodb.rs.secindpre
+            type: string
+            label: Secondary Index Prefetch
+            description: |
+              Indexes that a secondary member will load into memory before applying 
+              operations from oplog 
+            default: all
+
+          - name: mongodb.rs.enamajreadconcern
+            type: boolean
+            label: Enable Majority Read Concern
+            description: |
+              Enable Majority Read Concern
+            default: false
+
           - name: mongodb.rs.password
             type: string
             label: Replica Set password
@@ -273,19 +295,38 @@ brooklyn.catalog:
               is.first.node: true
 
               postinstall.command: |
-                # use this to initialize the RS
-                mongod --replset $REPLSETNAME
+                
 
+              # ask mike about whether this stacks or overwrites, assuming overwrites
               customize.command: |
+                
+                sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
+                sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
+                
+                # make sure that the indentation for this yaml is correct
                 echo "replication:
-                  oplogSizeMB: <int>
-                  replSetName: <string>
-                  secondaryIndexPrefetch: <string>
-                  enableMajorityReadConcern: <boolean>" | sudo tee -a /etc/mongod.conf
+                   oplogSizeMB: $OPLOGSIZE
+                   replSetName: $REPLSETNAME
+                   secondaryIndexPrefetch: $SECINDPRE
+                   enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
 
+                sudo service mongod restart
 
+              # ask mike about whether this stacks or overwrites, assuming overwrites
               shell.env:
+                UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
+                UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
+                UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
+                RHELREPO: $brooklyn:config("mongodb.rhelrepo")
+                PACKAGES: $brooklyn:config("mongodb.packagelist")
+                MONGOPORT: $brooklyn:config("mongodb.port")
+                MONGOIP: $brooklyn:config("mongodb.ipaddr")
+                MONGOVERS: $brooklyn:config("mongodb.version")
+
                 REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+                OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+                SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+                ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
 
 
 
