@@ -228,16 +228,16 @@ brooklyn.catalog:
           - type: brooklyn.enricher.basic.Transformer
             brooklyn.config:
               enricher.sourceSensor: $brooklyn:sensor("service.isUp")
-              enricher.targetSensor: $brooklyn:sensor("mongodb.url")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.address")
               enricher.targetValue: |
-                $brooklyn:formatString("http://%s:%s", 
+                $brooklyn:formatString("%s:%s", 
                   $brooklyn:attributeWhenReady("host.address"), $brooklyn:config("mongodb.port"))
           - type: brooklyn.enricher.basic.Transformer
             brooklyn.config:
               enricher.sourceSensor: $brooklyn:sensor("service.isUp")
-              enricher.targetSensor: $brooklyn:sensor("mongodb.subnet.url")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.subnet.address")
               enricher.targetValue:
-                $brooklyn:formatString("http://%s:%s", 
+                $brooklyn:formatString("%s:%s", 
                   $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
 
     - id: mongodb-replicaset
@@ -295,14 +295,14 @@ brooklyn.catalog:
               is.first.node: true
 
               postinstall.command: |
+                mongo --eval "rs.initiate()"
                 
 
               # ask mike about whether this stacks or overwrites, assuming overwrites
               customize.command: |
-                
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
                 sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
-                
+
                 # make sure that the indentation for this yaml is correct
                 echo "replication:
                    oplogSizeMB: $OPLOGSIZE
@@ -329,9 +329,6 @@ brooklyn.catalog:
                 ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
 
 
-
-
-        
         memberSpec:
           $brooklyn:entitySpec:
             type: mongodb-server
@@ -340,4 +337,19 @@ brooklyn.catalog:
               is.first.node: false
 
         brooklyn.enrichers:
-          - type: org.apache.brooklyn.enricher.
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: mongodb-rs-address-aggregator
+              enricher.aggregator.excludeBlank: true
+              enricher.aggregating.fromMembers: true
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.address")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list")
+
+          - type: org.apache.brooklyn.enricher.stock.Joiner
+            brooklyn.config:
+              uniqueTag: mongodb-rs-address-joiner
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.address.list")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list.commaSeperated")
+              seperated: ","
+              quote: false
+              minimum: $brooklyn:config("cluster.initial.size")
