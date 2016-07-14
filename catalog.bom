@@ -290,6 +290,7 @@ brooklyn.catalog:
           $brooklyn:entitySpec:
             type: mongodb-server
             name: MongoDB RS Primary
+            id: first-node
 
             brooklyn.config:
               is.first.node: true
@@ -314,19 +315,27 @@ brooklyn.catalog:
 
               # ask mike about whether this stacks or overwrites, assuming overwrites
               shell.env:
-                UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
-                UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
-                UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
-                RHELREPO: $brooklyn:config("mongodb.rhelrepo")
-                PACKAGES: $brooklyn:config("mongodb.packagelist")
-                MONGOPORT: $brooklyn:config("mongodb.port")
-                MONGOIP: $brooklyn:config("mongodb.ipaddr")
-                MONGOVERS: $brooklyn:config("mongodb.version")
+                # UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
+                # UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
+                # UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
+                # RHELREPO: $brooklyn:config("mongodb.rhelrepo")
+                # PACKAGES: $brooklyn:config("mongodb.packagelist")
+                # MONGOPORT: $brooklyn:config("mongodb.port")
+                # MONGOIP: $brooklyn:config("mongodb.ipaddr")
+                # MONGOVERS: $brooklyn:config("mongodb.version")
 
                 REPLSETNAME: $brooklyn:config("mongodb.rs.name")
                 OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
                 SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
                 ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
+
+              brooklyn.initializers:
+                - type: org.apache.brooklyn.core.sensor.SshCommandSensor
+                  brooklyn.config:
+                  name: mongodb.rs.primaryNode
+                  command: |
+                    mongo --eval "use admin; var g=db.runCommand({replSetGetStatus:1}).members;(function(){for(var i in g){if(g[i].stateStr==='PRIMARY')return g[i];}})().name"
+                  period: 100ms
 
 
         memberSpec:
@@ -335,6 +344,37 @@ brooklyn.catalog:
             name: MongoDB RS member
             brooklyn.config:
               is.first.node: false
+
+              postinstall.command: |
+                mongo --host 
+            
+              customize.command: |
+                sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
+                sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
+
+                # make sure that the indentation for this yaml is correct
+                echo "replication:
+                   oplogSizeMB: $OPLOGSIZE
+                   replSetName: $REPLSETNAME
+                   secondaryIndexPrefetch: $SECINDPRE
+                   enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
+
+                sudo service mongod restart
+
+
+              shell.env:
+                REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+                OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+                SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+                ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
+
+                # PRIMARYNODE: $brooklyn:config("mongodb.rs.primaryNode")
+
+                PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
+
+
+
+        
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
@@ -353,3 +393,5 @@ brooklyn.catalog:
               seperated: ","
               quote: false
               minimum: $brooklyn:config("cluster.initial.size")
+
+          # - type: org.apache.brooklyn.en
