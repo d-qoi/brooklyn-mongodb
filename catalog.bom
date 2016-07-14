@@ -285,6 +285,15 @@ brooklyn.catalog:
               Assuming that this is not also enterprise only, the authentication for MongoDB RS
             default: ChangeMe123
 
+          - name: cluster.initial.size
+            type: string
+            label: initial size of the cluster
+            description: |
+              Initial size of the Replica Set Cluster. Minimum is 3
+            default: 4
+
+       
+
 
         firstMemberSpec:
           $brooklyn:entitySpec:
@@ -346,7 +355,7 @@ brooklyn.catalog:
               is.first.node: false
 
               postinstall.command: |
-                mongo --host 
+                mongo --host $PRIMARYNODE --port $MONGOPORT --eval "use admin; rs.add('$OWNADDRESS')"
             
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
@@ -371,6 +380,8 @@ brooklyn.catalog:
                 # PRIMARYNODE: $brooklyn:config("mongodb.rs.primaryNode")
 
                 PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
+
+                OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
 
 
 
