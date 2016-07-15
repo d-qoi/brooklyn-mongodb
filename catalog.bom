@@ -341,10 +341,10 @@ brooklyn.catalog:
               brooklyn.initializers:
                 - type: org.apache.brooklyn.core.sensor.SshCommandSensor
                   brooklyn.config:
-                  name: mongodb.rs.primaryNode
-                  command: |
-                    mongo --eval "use admin; var g=db.runCommand({replSetGetStatus:1}).members;(function(){for(var i in g){if(g[i].stateStr==='PRIMARY')return g[i];}})().name"
-                  period: 100ms
+                    name: mongodb.rs.primaryNode
+                    command: |
+                      mongo --host $PRIMARYNODE --eval "db.runCommand( { isMaster : 1 } ) ["primary"]"
+                    period: 100ms
 
 
         memberSpec:
@@ -355,7 +355,7 @@ brooklyn.catalog:
               is.first.node: false
 
               postinstall.command: |
-                mongo --host $PRIMARYNODE --port $MONGOPORT --eval "use admin; rs.add('$OWNADDRESS')"
+                mongo --host $PRIMARYNODE --eval "rs.add('$OWNADDRESS')"
             
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
@@ -382,8 +382,7 @@ brooklyn.catalog:
                 PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
 
                 OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
-
-
+      
 
         
 
