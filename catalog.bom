@@ -141,7 +141,7 @@ brooklyn.catalog:
             PACKAGES: $brooklyn:config("mongodb.packagelist")
             MONGOPORT: $brooklyn:config("mongodb.port")
             # MONGOIP: $brooklyn:config("mongodb.ipaddr")
-            MONGOIP: $brooklyn:attributeWhenReady("host.address")
+            MONGOIP: $brooklyn:attributeWhenReady("host.subnet.address")
             MONGOVERS: $brooklyn:config("mongodb.version")
     
         brooklyn.initializers:
