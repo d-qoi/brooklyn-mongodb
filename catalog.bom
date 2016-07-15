@@ -67,12 +67,12 @@ brooklyn.catalog:
             default: 27017
             
             # if 127.0.0.1 is not one of the ip addresses that mongo is listening too, the the tests will not work
-          - name: mongodb.ipaddr
-            type: string
-            label: MongoDB IpAddresses
-            description: |
-              The comma seperated list of IP Addresses that MongoDB will listen on
-            default: 127.0.0.1
+          # - name: mongodb.ipaddr
+          #   type: string
+          #   label: MongoDB IpAddresses
+          #   description: |
+          #     The comma seperated list of IP Addresses that MongoDB will listen on
+          #   default: 127.0.0.1
             
             # needed for something
           - name: mongodb.version
@@ -140,7 +140,8 @@ brooklyn.catalog:
             RHELREPO: $brooklyn:config("mongodb.rhelrepo")
             PACKAGES: $brooklyn:config("mongodb.packagelist")
             MONGOPORT: $brooklyn:config("mongodb.port")
-            MONGOIP: $brooklyn:config("mongodb.ipaddr")
+            # MONGOIP: $brooklyn:config("mongodb.ipaddr")
+            MONGOIP: $brooklyn:attributeWhenReady("host.address")
             MONGOVERS: $brooklyn:config("mongodb.version")
     
         brooklyn.initializers:
@@ -232,6 +233,7 @@ brooklyn.catalog:
               enricher.targetValue: |
                 $brooklyn:formatString("%s:%s", 
                   $brooklyn:attributeWhenReady("host.address"), $brooklyn:config("mongodb.port"))
+
           - type: brooklyn.enricher.basic.Transformer
             brooklyn.config:
               enricher.sourceSensor: $brooklyn:sensor("service.isUp")
