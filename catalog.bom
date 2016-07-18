@@ -115,11 +115,6 @@ brooklyn.catalog:
             sudo service mongod stop
     
           customize.command: |
-            #TODO 
-            # add settings for authentication
-            # add settings for sharding
-            # add settings for replication
-            # these will probably be in a different item
             sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
             sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
             sudo service mongod restart
@@ -292,15 +287,44 @@ brooklyn.catalog:
             label: initial size of the cluster
             description: |
               Initial size of the Replica Set Cluster. Minimum is 3
-            default: 4
+            default: 3
 
-       
+        shell.env:
+          # UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
+          # UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
+          # UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
+          # RHELREPO: $brooklyn:config("mongodb.rhelrepo")
+          # PACKAGES: $brooklyn:config("mongodb.packagelist")
+          # MONGOPORT: $brooklyn:config("mongodb.port")
+          # MONGOIP: $brooklyn:config("mongodb.ipaddr")
+          # MONGOVERS: $brooklyn:config("mongodb.version")\]
+          REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+          OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+          SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+          ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
 
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: mongodb-rs-address-aggregator
+              enricher.aggregator.excludeBlank: true
+              enricher.aggregating.fromMembers: true
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.address")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list")
+
+          - type: org.apache.brooklyn.enricher.stock.Joiner
+            brooklyn.config:
+              uniqueTag: mongodb-rs-address-joiner
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.address.list")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list.commaSeperated")
+              seperated: ","
+              quote: false
+              minimum: $brooklyn:config("cluster.initial.size")
 
         firstMemberSpec:
           $brooklyn:entitySpec:
             type: mongodb-server
-            name: MongoDB RS Primary
+            name: MongoDB RS First Node
             id: first-node
 
             brooklyn.config:
@@ -309,8 +333,6 @@ brooklyn.catalog:
               postinstall.command: |
                 mongo --eval "rs.initiate()"
                 
-
-              # ask mike about whether this stacks or overwrites, assuming overwrites
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
                 sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
@@ -324,22 +346,6 @@ brooklyn.catalog:
 
                 sudo service mongod restart
 
-              # ask mike about whether this stacks or overwrites, assuming overwrites
-              shell.env:
-                # UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
-                # UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
-                # UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
-                # RHELREPO: $brooklyn:config("mongodb.rhelrepo")
-                # PACKAGES: $brooklyn:config("mongodb.packagelist")
-                # MONGOPORT: $brooklyn:config("mongodb.port")
-                # MONGOIP: $brooklyn:config("mongodb.ipaddr")
-                # MONGOVERS: $brooklyn:config("mongodb.version")
-
-                REPLSETNAME: $brooklyn:config("mongodb.rs.name")
-                OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
-                SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
-                ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
-
               brooklyn.initializers:
                 - type: org.apache.brooklyn.core.sensor.SshCommandSensor
                   brooklyn.config:
@@ -347,7 +353,6 @@ brooklyn.catalog:
                     command: |
                       mongo --host $PRIMARYNODE --eval "db.runCommand( { isMaster : 1 } ) ["primary"]"
                     period: 100ms
-
 
         memberSpec:
           $brooklyn:entitySpec:
@@ -372,38 +377,12 @@ brooklyn.catalog:
 
                 sudo service mongod restart
 
-
               shell.env:
-                REPLSETNAME: $brooklyn:config("mongodb.rs.name")
-                OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
-                SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
-                ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
-
+                # REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+                # OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+                # SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+                # ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
                 # PRIMARYNODE: $brooklyn:config("mongodb.rs.primaryNode")
-
                 PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
-
                 OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
       
-
-        
-
-        brooklyn.enrichers:
-          - type: org.apache.brooklyn.enricher.stock.Aggregator
-            brooklyn.config:
-              uniqueTag: mongodb-rs-address-aggregator
-              enricher.aggregator.excludeBlank: true
-              enricher.aggregating.fromMembers: true
-              enricher.sourceSensor: $brooklyn:sensor("mongodb.address")
-              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list")
-
-          - type: org.apache.brooklyn.enricher.stock.Joiner
-            brooklyn.config:
-              uniqueTag: mongodb-rs-address-joiner
-              enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.address.list")
-              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list.commaSeperated")
-              seperated: ","
-              quote: false
-              minimum: $brooklyn:config("cluster.initial.size")
-
-          # - type: org.apache.brooklyn.en
