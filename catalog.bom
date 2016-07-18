@@ -245,63 +245,57 @@ brooklyn.catalog:
       item:
         type: org.apache.brooklyn.entity.group.DynamicCluster
         
-        brooklyn.parameters:
-          - name: mongodb.rs.name
-            type: string
-            label: Replica Set name
-            description: |
-              The name of the Replica Set
-            default: ReplicaSetName
+        # brooklyn.parameters:
+        #   - name: mongodb.rs.name
+        #     type: string
+        #     label: Replica Set name
+        #     description: |
+        #       The name of the Replica Set
+        #     default: ReplicaSetName
 
-          - name: mongodb.rs.oplogsize
-            type: string
-            label: Operation Log Size
-            description: |
-              The Size of the operation log in Megabytes
-            default: 4096
+        #   - name: mongodb.rs.oplogsize
+        #     type: string
+        #     label: Operation Log Size
+        #     description: |
+        #       The Size of the operation log in Megabytes
+        #     default: 4096
 
-          - name: mongodb.rs.secindpre
-            type: string
-            label: Secondary Index Prefetch
-            description: |
-              Indexes that a secondary member will load into memory before applying 
-              operations from oplog 
-            default: all
+        #   - name: mongodb.rs.secindpre
+        #     type: string
+        #     label: Secondary Index Prefetch
+        #     description: |
+        #       Indexes that a secondary member will load into memory before applying 
+        #       operations from oplog 
+        #     default: all
 
-          - name: mongodb.rs.enamajreadconcern
-            type: boolean
-            label: Enable Majority Read Concern
-            description: |
-              Enable Majority Read Concern
-            default: false
+        #   - name: mongodb.rs.enamajreadconcern
+        #     type: boolean
+        #     label: Enable Majority Read Concern
+        #     description: |
+        #       Enable Majority Read Concern
+        #     default: false
 
-          - name: mongodb.rs.password
-            type: string
-            label: Replica Set password
-            description: |
-              Assuming that this is not also enterprise only, the authentication for MongoDB RS
-            default: ChangeMe123
+        #   - name: mongodb.rs.password
+        #     type: string
+        #     label: Replica Set password
+        #     description: |
+        #       Assuming that this is not also enterprise only, the authentication for MongoDB RS
+        #     default: ChangeMe123
 
-          - name: cluster.initial.size
-            type: string
-            label: initial size of the cluster
-            description: |
-              Initial size of the Replica Set Cluster. Minimum is 3
-            default: 3
+        #   - name: cluster.initial.size
+        #     type: string
+        #     label: initial size of the cluster
+        #     description: |
+        #       Initial size of the Replica Set Cluster. Minimum is 3
+        #     default: 3
 
-        shell.env:
-          # UBUNTUREPO: $brooklyn:config("mongodb.ubunturepo")
-          # UBUNTUKEYSERV: $brooklyn:config("mongodb.ubuntukeyserv")
-          # UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
-          # RHELREPO: $brooklyn:config("mongodb.rhelrepo")
-          # PACKAGES: $brooklyn:config("mongodb.packagelist")
-          # MONGOPORT: $brooklyn:config("mongodb.port")
-          # MONGOIP: $brooklyn:config("mongodb.ipaddr")
-          # MONGOVERS: $brooklyn:config("mongodb.version")\]
-          REPLSETNAME: $brooklyn:config("mongodb.rs.name")
-          OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
-          SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
-          ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
+        brooklyn.config:
+          mongodb.rs.name: ReplicaSetName
+          mongodb.rs.oplogsize: 4096
+          mongodb.rs.secindpre: all
+          mongodb.rs.enamajreadconcern: false
+          cluster.initial.size: 3
+        
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
@@ -321,11 +315,26 @@ brooklyn.catalog:
               quote: false
               minimum: $brooklyn:config("cluster.initial.size")
 
+
         firstMemberSpec:
           $brooklyn:entitySpec:
             type: mongodb-server
             name: MongoDB RS First Node
             id: first-node
+
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: mongodb.rs.primaryNode
+                  command: |
+                    mongo --host $OWNADDRESS --eval "db.runCommand( { isMaster : 1 } ) ["primary"]"
+                  period: 100ms
+
+            shell.env:
+              REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+              OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+              SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+              ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
 
             brooklyn.config:
               is.first.node: true
@@ -346,18 +355,11 @@ brooklyn.catalog:
 
                 sudo service mongod restart
 
-              brooklyn.initializers:
-                - type: org.apache.brooklyn.core.sensor.SshCommandSensor
-                  brooklyn.config:
-                    name: mongodb.rs.primaryNode
-                    command: |
-                      mongo --host $PRIMARYNODE --eval "db.runCommand( { isMaster : 1 } ) ["primary"]"
-                    period: 100ms
-
         memberSpec:
           $brooklyn:entitySpec:
             type: mongodb-server
             name: MongoDB RS member
+
             brooklyn.config:
               is.first.node: false
 
@@ -377,12 +379,11 @@ brooklyn.catalog:
 
                 sudo service mongod restart
 
-              shell.env:
-                # REPLSETNAME: $brooklyn:config("mongodb.rs.name")
-                # OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
-                # SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
-                # ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
-                # PRIMARYNODE: $brooklyn:config("mongodb.rs.primaryNode")
-                PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
-                OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
+            shell.env:
+              PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
+              OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
+              REPLSETNAME: $brooklyn:config("mongodb.rs.name")
+              OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
+              SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
+              ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
       
