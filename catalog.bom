@@ -327,7 +327,9 @@ brooklyn.catalog:
                 brooklyn.config:
                   name: mongodb.rs.primaryNode
                   command: |
-                    mongo --host $OWNADDRESS --eval "db.runCommand( { isMaster : 1 } ) ["primary"]"
+                    ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                    PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                    mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d'
                   period: 100ms
 
             shell.env:
@@ -338,10 +340,7 @@ brooklyn.catalog:
 
             brooklyn.config:
               is.first.node: true
-
-              postinstall.command: |
-                mongo --eval "rs.initiate()"
-                
+        
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
                 sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
@@ -354,6 +353,7 @@ brooklyn.catalog:
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
 
                 sudo service mongod restart
+                mongo --host $MONGOIP --port $MONGOPORT --eval "rs.initiate()"
 
         memberSpec:
           $brooklyn:entitySpec:
@@ -362,9 +362,6 @@ brooklyn.catalog:
 
             brooklyn.config:
               is.first.node: false
-
-              postinstall.command: |
-                mongo --host $PRIMARYNODE --eval "rs.add('$OWNADDRESS')"
             
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
@@ -378,6 +375,7 @@ brooklyn.catalog:
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
 
                 sudo service mongod restart
+                mongo --host $PRIMARYNODE --eval "rs.add('$OWNADDRESS')"
 
             shell.env:
               PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
