@@ -145,77 +145,99 @@ brooklyn.catalog:
             brooklyn.config:
               name: mongodb.server.status.bson
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) "
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) "
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.uptime
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['uptime'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['uptime'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.insert
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['insert'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['insert'] " | sed '3!d'
               period: 100ms
         
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.query
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['query'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['query'] " | sed '3!d'
               period: 100ms
           
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.update
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['update'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['update'] " | sed '3!d'
               period: 100ms
           
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.delete
               command: | 
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['delete'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['delete'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.getmore
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['getmore'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['getmore'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.opcounters.command
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['command'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['opcounters']['command'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.network.bytesIn
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesIn'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesIn'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.network.bytesOut
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesOut'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['network']['bytesOut'] " | sed '3!d'
               period: 100ms
     
           - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
               name: mongodb.server.network.numRequests
               command: |
-                mongo --eval "db.runCommand( { serverStatus: 1 } ) ['network']['numRequests'] " | sed '3!d'
+                ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { serverStatus: 1 } ) ['network']['numRequests'] " | sed '3!d'
               period: 100ms
     
         brooklyn.enrichers:
