@@ -375,11 +375,11 @@ brooklyn.catalog:
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
 
                 sudo service mongod restart
-                mongo --host $PRIMARYNODE --eval "rs.add('$OWNADDRESS')"
+                mongo --host $PRIMARYNODE --eval "rs.add('$MONGOIP:$MONGOPORT')"
 
             shell.env:
               PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
-              OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
+              #OWNADDRESS: $brooklyn:attributeWhenReady("mongodb.address")
               REPLSETNAME: $brooklyn:config("mongodb.rs.name")
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
