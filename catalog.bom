@@ -238,6 +238,7 @@ brooklyn.catalog:
                 $brooklyn:formatString("%s:%s", 
                   $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
 
+
     - id: mongodb-replicaset
       name: MongoDB Replica Set
       description: |
@@ -245,13 +246,6 @@ brooklyn.catalog:
         of mongodb servers for the other members
       item:
         type: org.apache.brooklyn.entity.group.DynamicCluster
-        
-        # brooklyn.config:
-        #   mongodb.rs.name: ReplicaSetName
-        #   mongodb.rs.oplogsize: 4096
-        #   mongodb.rs.secindpre: all
-        #   mongodb.rs.enamajreadconcern: false
-        #   cluster.initial.size: 3        
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
@@ -339,6 +333,7 @@ brooklyn.catalog:
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
               ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
 
+
     - id: mongodb-replicaset-template
       description: |
         A cluster of MongoDB Nodes that are joined together in a Replica Set
@@ -361,6 +356,7 @@ brooklyn.catalog:
           services:
             - type: mongodb-server-application
               name: "MongoDB Server"
+
 
     - id: mongodb-replicaset-application
       description: |
