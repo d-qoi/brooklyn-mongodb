@@ -246,12 +246,12 @@ brooklyn.catalog:
       item:
         type: org.apache.brooklyn.entity.group.DynamicCluster
         
-        brooklyn.config:
-          mongodb.rs.name: ReplicaSetName
-          mongodb.rs.oplogsize: 4096
-          mongodb.rs.secindpre: all
-          mongodb.rs.enamajreadconcern: false
-          cluster.initial.size: 3        
+        # brooklyn.config:
+        #   mongodb.rs.name: ReplicaSetName
+        #   mongodb.rs.oplogsize: 4096
+        #   mongodb.rs.secindpre: all
+        #   mongodb.rs.enamajreadconcern: false
+        #   cluster.initial.size: 3        
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
@@ -347,7 +347,7 @@ brooklyn.catalog:
       iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
       itemType: template
       item:
-        service:
+        services:
           - type: mongodb-replicaset-application
             name: "MongoDB Replica Set"
 
@@ -404,6 +404,57 @@ brooklyn.catalog:
             description: |
               Initial size of the Replica Set Cluster. Minimum is 3
             default: 3
+
+          - name: mongodb.ubuntukeyserv
+            type: string
+            label: Ubuntu Key Server
+            description: The apt-key server URL
+            default: hkp://keyserver.ubuntu.com:80
+    
+          - name: mongodb.ubuntukeyrecv
+            type: string
+            label: Ubuntu Key --recv thing
+            description: the thing that goes after --recv in the apt-key command
+            default: EA312927
+    
+          - name: mongodb.ubunturepo
+            type: string
+            label: Ubuntu Repo URL
+            description: |
+             The Repo URL of MongoDB for apt-get
+             currently hard coded for 3.2, this needs to be changed if the version changes
+            default: http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse
+    
+          - name: mongodb.rhelkeyserv
+            type: string
+            label: RHEL Key Server
+            description: The server URL for the GPG key for RHEL based OSs (default is for version 3.2)
+            default: https://www.mongodb.org/static/pgp/server-3.2.asc
+            
+          - name: mongodb.rhelrepo
+            type: string
+            label: RHEL Repo
+            description: the server URL for the repo containing MongoDB for RHEL systems
+            default: https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/stable/$basearch/    
+    
+          - name: mongodb.packagelist
+            type: string
+            label: Package Install list
+            description: The space seperated list of packages to install
+            default: mongodb-org
+
+          - name: mongodb.port
+            type: port
+            label: mongoDB port
+            description: MongoDB Port
+            default: 27017
+            
+          - name: mongodb.version
+            type: string
+            label: MongoDB MajorVersion
+            description: |
+              Generally set at 3.2 for now 
+            default: 3.2
 
         brooklyn.children:
           - type: mongodb-replicaset
