@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "1.0"
+  version: "2.0"
   iconUrl: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
   
   publish:
@@ -238,7 +238,6 @@ brooklyn.catalog:
                 $brooklyn:formatString("%s:%s", 
                   $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
 
-
     - id: mongodb-replicaset
       name: MongoDB Replica Set
       description: |
@@ -293,14 +292,11 @@ brooklyn.catalog:
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
                 sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
-
-                # make sure that the indentation for this yaml is correct
                 echo "replication:
                    oplogSizeMB: $OPLOGSIZE
                    replSetName: $REPLSETNAME
                    secondaryIndexPrefetch: $SECINDPRE
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
-
                 sudo service mongod restart
                 mongo --host $MONGOIP --port $MONGOPORT --eval "rs.initiate()"
 
@@ -315,14 +311,11 @@ brooklyn.catalog:
               customize.command: |
                 sudo sed -i "s/port:.*/port: $MONGOPORT/g" /etc/mongod.conf
                 sudo sed -i "s/bindIp:.*/bindIp: $MONGOIP/g" /etc/mongod.conf
-
-                # make sure that the indentation for this yaml is correct
                 echo "replication:
                    oplogSizeMB: $OPLOGSIZE
                    replSetName: $REPLSETNAME
                    secondaryIndexPrefetch: $SECINDPRE
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
-
                 sudo service mongod restart
                 mongo --host $PRIMARYNODE --eval "rs.add('$MONGOIP:$MONGOPORT')"
 
@@ -332,7 +325,6 @@ brooklyn.catalog:
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
               ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
-
 
     - id: mongodb-replicaset-template
       description: |
@@ -356,7 +348,6 @@ brooklyn.catalog:
           services:
             - type: mongodb-server-application
               name: "MongoDB Server"
-
 
     - id: mongodb-replicaset-application
       description: |
@@ -392,7 +383,7 @@ brooklyn.catalog:
             default: all
 
           - name: mongodb.rs.enamajreadconcern
-            type: boolean
+            type: string
             label: Enable Majority Read Concern
             description: |
               Enable Majority Read Concern
