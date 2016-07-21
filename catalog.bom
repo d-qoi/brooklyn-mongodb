@@ -117,7 +117,7 @@ brooklyn.catalog:
             UBUNTUKEYRECV: $brooklyn:config("mongodb.ubuntukeyrecv")
             RHELREPO: $brooklyn:config("mongodb.rhelrepo")
             PACKAGES: $brooklyn:config("mongodb.packagelist")
-            MONGOPORT: $brooklyn:config("mongodb.port")
+            MONGOPORT: $brooklyn:attributeWhenReady("mongodb.port")
             MONGOIP: $brooklyn:attributeWhenReady("host.subnet.address")
             MONGOVERS: $brooklyn:config("mongodb.version")
     
@@ -228,7 +228,7 @@ brooklyn.catalog:
               enricher.targetSensor: $brooklyn:sensor("mongodb.address")
               enricher.targetValue: |
                 $brooklyn:formatString("%s:%s", 
-                  $brooklyn:attributeWhenReady("host.address"), $brooklyn:config("mongodb.port"))
+                  $brooklyn:attributeWhenReady("host.address"), $brooklyn:attributeWhenReady("mongodb.port"))
 
           - type: brooklyn.enricher.basic.Transformer
             brooklyn.config:
@@ -236,7 +236,7 @@ brooklyn.catalog:
               enricher.targetSensor: $brooklyn:sensor("mongodb.subnet.address")
               enricher.targetValue:
                 $brooklyn:formatString("%s:%s", 
-                  $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:config("mongodb.port"))        
+                  $brooklyn:attributeWhenReady("host.subnet.address"), $brooklyn:attributeWhenReady("mongodb.port"))        
 
     - id: mongodb-replicaset
       name: MongoDB Replica Set
