@@ -14,6 +14,10 @@ brooklyn.catalog:
       itemType: entity
       item:
         type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+
+        # provisioning.properties:
+        #   inboundPorts:
+        #     - $brooklyn:attributeWhenReady("mongodb.port")
   
         brooklyn.parameters:
           - name: mongodb.ubuntukeyserv
@@ -264,6 +268,14 @@ brooklyn.catalog:
               quote: false
               minimum: $brooklyn:config("cluster.initial.size")
 
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: mongodb-rs-primary-node
+              enricher.aggregator.excludeBlank: true
+              enricher.aggregating.fromMembers: true
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.members.primaryNode")
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.primaryNode")
+
         firstMemberSpec:
           $brooklyn:entitySpec:
             type: mongodb-server
@@ -304,6 +316,17 @@ brooklyn.catalog:
           $brooklyn:entitySpec:
             type: mongodb-server
             name: MongoDB RS member
+            id: nodes
+
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: mongodb.rs.primaryNode
+                  command: |
+                    ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                    PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                    mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d'
+                  period: 100ms
 
             brooklyn.config:
               is.first.node: false
