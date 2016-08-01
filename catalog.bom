@@ -355,6 +355,9 @@ brooklyn.catalog:
                    enableMajorityReadConcern: $ENAMAJREADCONCERN" | sudo tee -a /etc/mongod.conf
                 sudo service mongod restart
                 sleep 5
+                OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
+                PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --port $MONGOPORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
+                echo $PRIMARYNODEADDRESS
                 mongo --host $PRIMARYNODE --eval "rs.add('$MONGOIP:$MONGOPORT')"
 
 
@@ -379,6 +382,7 @@ brooklyn.catalog:
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
               ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
+              NODELIST: $brooklyn:attributeWhenReady("mongodb.rs.address.list")
 
 
 
