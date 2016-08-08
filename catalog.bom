@@ -258,22 +258,22 @@ brooklyn.catalog:
               uniqueTag: mongodb-rs-address-aggregator
               enricher.aggregator.excludeBlank: true
               enricher.aggregating.fromMembers: true
-              enricher.sourceSensor: $brooklyn:sensor("mongodb.address")
+              enricher.sourceSensor: $brooklyn:sensor("mongodb.subnet.address")
               enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list")
 
           - type: org.apache.brooklyn.enricher.stock.Joiner
             brooklyn.config:
               uniqueTag: mongodb-rs-address-joiner
               enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.address.list")
-              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list.commaSeperated")
-              seperated: ","
+              enricher.targetSensor: $brooklyn:sensor("mongodb.rs.address.list.spaceSeperated")
+              separator: " "
               quote: false
-              minimum: $brooklyn:config("cluster.initial.size")
+              minimum: 1
 
           - type: org.apache.brooklyn.enricher.stock.Aggregator
             brooklyn.config:
               uniqueTag: mongodb-rs-primary-node
-              enricher.aggregator.excludeBlank: false
+              enricher.aggregator.excludeBlank: true
               enricher.aggregating.fromMembers: true
               enricher.sourceSensor: $brooklyn:sensor("mongodb.rs.primaryNode")
               enricher.targetSensor: $brooklyn:sensor("mongodb.rs.primaryNode.list")
@@ -358,9 +358,9 @@ brooklyn.catalog:
                 sudo service mongod restart
                 sleep 5
                 OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
-                PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --port $MONGOPORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
+                PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
                 echo $PRIMARYNODEADDRESS
-                mongo --host $PRIMARYNODE --eval "rs.add('$MONGOIP:$MONGOPORT')"
+                mongo --host $PRIMARYNODEADDRESS --eval "rs.add('$MONGOIP:$MONGOPORT')"
 
 
               prestop.command: |
@@ -372,19 +372,22 @@ brooklyn.catalog:
                 done
 
               stop.command: |
-                mongo --host $PRIMARYNODE --eval "rs.remove('$MONGOIP:$MONGOPORT')"
+                OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
+                PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
+                echo $PRIMARYNODEADDRESS
+                mongo --host $PRIMARYNODEADDRESS --eval "rs.remove('$MONGOIP:$MONGOPORT')"
                 sleep 5
                 sudo service mongod stop
 
 
 
             shell.env:
-              PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
+              #PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
               REPLSETNAME: $brooklyn:config("mongodb.rs.name")
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
               ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
-              NODELIST: $brooklyn:component("my-mongodb-replicaset").attributeWhenReady("mongodb.rs.address.list")
+              NODELIST: $brooklyn:component("my-mongodb-replicaset").attributeWhenReady("mongodb.rs.address.list.spaceSeperated")
 
 
 
