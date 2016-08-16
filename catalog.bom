@@ -14,10 +14,6 @@ brooklyn.catalog:
       itemType: entity
       item:
         type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-
-        # provisioning.properties:
-        #   inboundPorts:
-        #     - $brooklyn:attributeWhenReady("mongodb.port")
   
         brooklyn.parameters:
           - name: mongodb.ubuntukeyserv
@@ -294,6 +290,14 @@ brooklyn.catalog:
                     mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d'
                   period: 100ms
 
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: mongodb.rs.oplongDate
+                  command: |
+                    ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
+                    PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
+                    mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d'
+
             shell.env:
               REPLSETNAME: $brooklyn:config("mongodb.rs.name")
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
@@ -315,16 +319,11 @@ brooklyn.catalog:
                 sleep 5
                 mongo --host $MONGOIP --port $MONGOPORT --eval "rs.initiate()"
 
-              prestop.command: |
-                mongo --host $MONGOIP --port $MONGOPORT --eval "rs.stepDown()"
-                sleep 5
-                while mongo --host $MONGOIP --port $MONGOPORT --eval "rs.isMaster()['ismaster']" | grep true
-                do
-                  sleep 5
-                done
-
               stop.command: |
-                mongo --host $PRIMARYNODE --eval "rs.remove('$MONGOIP:$MONGOPORT')"
+                OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
+                PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
+                echo $PRIMARYNODEADDRESS is the primary node
+                mongo --host $PRIMARYNODEADDRESS --eval "rs.remove('$MONGOIP:$MONGOPORT')"
                 sleep 5
                 sudo service mongod stop
 
@@ -342,7 +341,7 @@ brooklyn.catalog:
                     ADDRESS=$(cat /etc/mongod.conf | egrep -o [0-9]+\.[0-9]+\.[0-9]+.\[0-9]+)
                     PORT=$(cat /etc/mongod.conf | grep port\: | cut -c 9-)
                     mongo --host $ADDRESS --port $PORT --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d'
-                  period: 100ms
+                  period: 1s
 
             brooklyn.config:
               is.first.node: false
@@ -359,37 +358,27 @@ brooklyn.catalog:
                 sleep 5
                 OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
                 PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
-                echo $PRIMARYNODEADDRESS
+                echo $PRIMARYNODEADDRESS is the primary node
                 mongo --host $PRIMARYNODEADDRESS --eval "rs.add('$MONGOIP:$MONGOPORT')"
-
 
               prestop.command: |
                 mongo --host $MONGOIP --port $MONGOPORT --eval "rs.stepDown()"
                 sleep 5
-                while mongo --host $MONGOIP --port $MONGOPORT --eval "rs.isMaster()['ismaster']" | grep true
-                do
-                  sleep 5
-                done
 
               stop.command: |
                 OTHERNODEADDRESS=$(echo $NODELIST | awk '{print $1}')
                 PRIMARYNODEADDRESS=$(mongo --host $OTHERNODEADDRESS --eval "db.runCommand( { isMaster : 1 } ) ['primary']" | sed '3!d')
-                echo $PRIMARYNODEADDRESS
+                echo $PRIMARYNODEADDRESS is primary node
                 mongo --host $PRIMARYNODEADDRESS --eval "rs.remove('$MONGOIP:$MONGOPORT')"
                 sleep 5
                 sudo service mongod stop
 
-
-
             shell.env:
-              #PRIMARYNODE: $brooklyn:component("first-node").attributeWhenReady("mongodb.rs.primaryNode")
               REPLSETNAME: $brooklyn:config("mongodb.rs.name")
               OPLOGSIZE: $brooklyn:config("mongodb.rs.oplogsize")
               SECINDPRE: $brooklyn:config("mongodb.rs.secindpre")
               ENAMAJREADCONCERN: $brooklyn:config("mongodb.rs.enamajreadconcern")
               NODELIST: $brooklyn:component("my-mongodb-replicaset").attributeWhenReady("mongodb.rs.address.list.spaceSeperated")
-
-
 
     - id: mongodb-replicaset-template
       description: |
@@ -401,8 +390,7 @@ brooklyn.catalog:
       item:
         services:
           - type: mongodb-replicaset-application
-            name: "MongoDB Replica Set"
-            
+            name: "MongoDB Replica Set"          
 
     - id: mongodb-server-template
       description: |
